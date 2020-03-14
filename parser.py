@@ -203,7 +203,7 @@ def parseTitle(title):
     if '[#' in title:
         start = re.compile("\[#\d\]").search(title).end()
         minorUpdate = int(title[title.find('[#')+2:title.find(']')])
-    version = float(title[start:end].strip())
+    version = str(title[start:end].strip())
     return version, minorUpdate
 
 def isChampion(name):
@@ -387,8 +387,8 @@ def getPatchNote(url):
         return newDict
 
     pprint.pprint(data,indent=2)
-    with open(os.path.join(os.path.join(BASE_DIR,"log"), str("ver"+str(version)+" "+str(timezone.now().strftime("%Y-%m-%d %H-%M-%S"))+'.json')), 'w+', encoding="utf-8") as json_file:
-        json.dump(dictionarize(data), json_file, ensure_ascii=False, indent="\t")
+    # with open(os.path.join(os.path.join(BASE_DIR,"log"), str("ver"+str(version)+" "+str(timezone.now().strftime("%Y-%m-%d %H-%M-%S"))+'.json')), 'w+', encoding="utf-8") as json_file:
+    #     json.dump(dictionarize(data), json_file, ensure_ascii=False, indent="\t")
 
 if __name__ == '__main__':
     #checkNewPatchNote()
