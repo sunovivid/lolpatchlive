@@ -21,24 +21,25 @@ sampleData = {
 }
 
 def index(request):
-    vModels = VersionModel.objects.all()
+    vModels = VersionModel.objects.all().order_by('updateDate')
     versionModelDict = {}
     context = {}
-    for i, v in enumerate(vModels):
-        if str(v.version) == versions.getLiveClientVersion():
-            versionModelDict["now"] = vModels[i]
-            versionModelDict["prev"] = vModels[i-1] if i-1 > 0 else None
-            versionModelDict["next"] = vModels[i+1] if i+1 < len(vModels) else None
-            break
-    for key, versionModel in versionModelDict.items():
-        if versionModel is not None:
-            context[key]["version"] = versionModel.version
-            context[key]["summary"] = versionModel.summary
-            minorUpdate = get_list_or_404(MinorUpdateModel, version=versionModel)[0]
-            context[key]["hotfix"] = "Hotfix #{} ".format(len(minorUpdate)) + minorUpdate.updateTitle
-            headerModels = get_list_or_404(HeaderModel, version=VersionModel)
-            context[key]["tags"] = list(map(lambda x: x.header, headerModels))
-            context[key]["champions"] = list(map(lambda x: x.championName, get_list_or_404(ChampionPatchModel, version=versionModel)))
-    return render(request, 'updates/index.html', context)
+
+    # for i, v in enumerate(vModels):
+    #     if str(v.version) == versions.getLiveClientVersion():
+    #         versionModelDict["now"] = vModels[i]
+    #         versionModelDict["prev"] = vModels[i-1] if i-1 > 0 else None
+    #         versionModelDict["next"] = vModels[i+1] if i+1 < len(vModels) else None
+    #         break
+    # for key, versionModel in versionModelDict.items():
+    #     if versionModel is not None:
+    #         context[key]["version"] = versionModel.version
+    #         context[key]["summary"] = versionModel.summary
+    #         minorUpdate = get_list_or_404(MinorUpdateModel, version=versionModel)[0]
+    #         context[key]["hotfix"] = "Hotfix #{} ".format(len(minorUpdate)) + minorUpdate.updateTitle
+    #         headerModels = get_list_or_404(HeaderModel, version=VersionModel)
+    #         context[key]["tags"] = list(map(lambda x: x.header, headerModels))
+    #         context[key]["champions"] = list(map(lambda x: x.championName, get_list_or_404(ChampionPatchModel, version=versionModel)))
+    return render(request, 'updates/index.html', {"version":vModels[0].version})
 # Create your views here.
 
