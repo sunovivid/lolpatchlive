@@ -172,29 +172,24 @@ def getAllPatchNoteUrlsAndTitles():
         return result
 
 def checkNewPatchNote():
-    #prevPatchNotes = VersionModel.objects.all()
     try:
         with open(os.path.join('resources','prevTitles.txt'), 'rb') as f:
-            prevTitles = pickle.load(f)
+            prevUrlAndTitles = pickle.load(f)
     except FileNotFoundError:
         with open(os.path.join('resources','prevTitles.txt'), 'wb') as f:
             pickle.dump([], f)
-            prevTitles = []
-    pprint.pprint(prevTitles)
-    currentUrlsAndTitles = getAllPatchNoteUrlsAndTitles()
-    while currentUrlsAndTitles is None:
-        currentUrlsAndTitles = getAllPatchNoteUrlsAndTitles()
+            prevUrlAndTitles = []
+    pprint.pprint(prevUrlAndTitles)
+    currentUrlsAndTitles = getAllPatchNoteUrlsAndTitles().reversed()
     pprint.pprint(currentUrlsAndTitles)
-    currentTitles = []
+    while currentUrlsAndTitles is None:
+        currentUrlsAndTitles = getAllPatchNoteUrlsAndTitles().reversed()
     for url, title in currentUrlsAndTitles:
-        title = title.strip()
-        currentTitles.append(title)
-        #version 모델 최신 레코드인지 확인하고 등록
-        if title not in prevTitles:
+        if title not in map(lambda x:x[1], prevUrlAndTitles):
             print("getPatchNote({})".format(title))
             getPatchNote(url)
     with open(os.path.join('resources','prevTitles.txt'),'wb') as f:
-        pickle.dump(currentTitles, f)
+        pickle.dump(currentUrlsAndTitles, f)
 
 def parseTitle(title):
     end = re.compile("패치 노트").search(title).start()
@@ -212,7 +207,18 @@ def isChampion(name):
             return True
     return False
 
-def getPatchNote(url):
+def getPatchNote(url, getMinorUpdateOnly=False):
+
+    def getAndSaveModelSafe(Model, **kwargs):
+        model, isCreated = Model.objects.get_or_create(**kwargs)
+        if isCreated:
+            model.save()
+            print("모델 저장 성공 {}".format(str(Model)))
+        else:
+            print("이미 저장된 모델 {}".format(str(Model)))
+        return model
+
+
     html = getHtml(url)
     bs = BeautifulSoup(html, "lxml")
 
@@ -272,68 +278,78 @@ def getPatchNote(url):
     versionModel = None
     headerModel = None
     MINOR_UPDATE_DEFAULT = "아직 추가 패치 노트 없음"
-    latestUpdateTitle = MINOR_UPDATE_DEFAULT
-    currentMinorUpdateModel = MinorUpdateModel(updateTitle=MINOR_UPDATE_DEFAULT, version=versionModel)
+    lastMinorUpdateTitle = MINOR_UPDATE_DEFAULT
+
     def articleSave(content, header, headerModel):
         print('\t<아티클>',header)
         contentHtml = content.find("div", {"class": "patch-change-block white-stone accent-before"})
         data["headers"][header].append(contentHtml)
-        articleModel = ArticleModel(contentHtml=str(contentHtml), header=headerModel)
-        if articleModel not in ArticleModel.objects.all():
-            articleModel.save()
+        articleModel = getAndSaveModelSafe(ArticleModel, contentHtml=str(contentHtml), header=headerModel)
 
+
+    def initVersionSetting(versionModel):
+        minorModelsForThisVersion = MinorUpdateModel.objects.filter(version=versionModel).order_by(
+            '-updateDate')
+        if not minorModelsForThisVersion.exists():
+            lastMinorUpdateModel = getAndSaveModelSafe(MinorUpdateModel, updateTitle=MINOR_UPDATE_DEFAULT,
+                                                       version=versionModel)
+        else:
+            lastMinorUpdateModel = minorModelsForThisVersion[0]
+        lastMinorUpdateTitle = lastMinorUpdateModel.updateTitle
+
+    isVersionSettingInitiated = False
     for content in bs.find("div", {"id": "patch-notes-container"}).children:
         if content.name is not None:
             if content.name == "blockquote":
                 summary = content.get_text().strip()
                 data["summary"] = summary
-                versionModel = VersionModel(version=str(version), summary=summary)
-                versionModel.save()
+                versionModel = getAndSaveModelSafe(VersionModel, version=str(version), summary=summary)
+                if not isVersionSettingInitiated:
+                    initVersionSetting(versionModel)
+                    isVersionSettingInitiated = True
             elif content.name == "header":
                 header = content.get_text().strip()
                 data["headers"][header] = []
-                headerModel = HeaderModel(header=header, version=versionModel)
-                headerModel.save()
+                headerModel = getAndSaveModelSafe(HeaderModel, header=header, version=versionModel)
                 print("<새 헤더> "+header)
                 if header == "추가 패치 노트":
                     data["models"]["추가 패치 노트"] = {}
-                    if MinorUpdateModel.objects.last() is not None:
-                        currentMinorUpdateModel = MinorUpdateModel.objects.last()
-                        latestUpdateTitle = currentMinorUpdateModel.updateTitle
                 elif header == "챔피언":
                     data["models"]["챔피언"] = {}
             elif content.name == 'div' and content.attrs['class'] == ['content-border']:
                 if header == "추가 패치 노트":
-                    pointer = content.h3
-                    if pointer is None:
-                        print("ERROR!! 추가 패치 노트 헤더가 있지만 내용을 찾을 수 없습니다.")
-                        continue
-                    updateTitle = pointer.get_text()
-                    if updateTitle == latestUpdateTitle:
+                    updateTitle = content.h3.get_text()
+                    if updateTitle == lastMinorUpdateTitle:
+                        data["models"]["추가 패치 노트"][updateTitle] = "이미 저장한 추가 패치 노트"
                         print("이미 저장한 추가 패치 노트: "+updateTitle)
                         print("최신 버전임")
                         break #디버그할때는 주석처리하기
                     else:
                         print("저장 시도: " + updateTitle)
-                        if updateTitle not in map(lambda x:x.updateTitle, MinorUpdateModel.objects.all()):
-                            minorUpdateModel = MinorUpdateModel(updateTitle=updateTitle,version=versionModel)
-                            minorUpdateModel.save()
-                            while pointer.find_next('h4',{"class":"change-detail-title ability-title"}) is not None:
-                                pointer = pointer.find_next('h4')
-                                itemName = pointer.get_text().strip()
-                                item = []
-                                data["models"]["추가 패치 노트"][itemName] = []
-                                while pointer.nextSiblig is not None and pointer.nextSiblig == pointer.find_next("div"):
-                                    pointer = pointer.find_next('div')
-                                    item.append(pointer)
-                                    data["models"]["추가 패치 노트"][itemName].append(str(pointer))
+                        if updateTitle not in map(lambda x:x.updateTitle, MinorUpdateModel.objects.filter(version=versionModel)):
+                            data["models"]["추가 패치 노트"][updateTitle] = {}
+                            minorUpdateModel = getAndSaveModelSafe(MinorUpdateModel, updateTitle=updateTitle, version=versionModel)
+                            for line in content.find("div",{"class":"white-stone accent-before"}).div.children:
+                                if line.name is not None:
+                                    if line.name == "h4":
+                                        itemName = line.get_text().strip()
+                                        # item = []
+                                        data["models"]["추가 패치 노트"][updateTitle][itemName] = []
+                                    elif line.name == "div":
+                                        # item.append(str(line))
+                                        data["models"]["추가 패치 노트"][updateTitle][itemName].append(str(line))
+                            for (itemName, itemList) in data["models"]["추가 패치 노트"][updateTitle].items():
                                 if isChampion(itemName):
-                                    ChampionMinorPatchModel(championName=itemName,contentHtmlList=str(item),minorUpdate=minorUpdateModel).save()
-                                MinorUpdateItemModel(itemName=itemName, item=str(item), minorUpdate=minorUpdateModel).save()
+                                    getAndSaveModelSafe(ChampionMinorPatchModel, championName=itemName,
+                                                        contentHtmlList=str(itemList),
+                                                        minorUpdate=minorUpdateModel)
+                                getAndSaveModelSafe(MinorUpdateItemModel, itemName=itemName, item=str(itemList),
+                                                    minorUpdate=minorUpdateModel, updateDate=timezone.now())
                             print("저장 완료: "+updateTitle)
                         else:
                             print("저장할 필요 없음: " + updateTitle)
-                elif latestUpdateTitle == MINOR_UPDATE_DEFAULT:
+                elif not getMinorUpdateOnly:
+                    print("getMinorUpdateOnly")
                     articleSave(content, header, headerModel)
                     if header == "챔피언":
                         championName = content.div.div.h3.a.get_text()
@@ -357,8 +373,7 @@ def getPatchNote(url):
                             contentHtml = '404 error'
                         data["models"]["챔피언"][championName]["html"] = str(contentHtml)
                         print("\t[챔피언] "+championName+": "+championSummaryText)
-                        championPatchModel = ChampionPatchModel(championName=championName,championSummaryText=championSummaryText,championQuoteText=quoteText,contentHtml=contentHtml,version=versionModel)
-                        championPatchModel.save()
+                        championPatchModel = getAndSaveModelSafe(ChampionPatchModel, championName=championName,championSummaryText=championSummaryText,championQuoteText=quoteText,contentHtml=contentHtml,version=versionModel)
             else:
                 if content.get_text() != '맨 위로 돌아가기':
                     print("<UNKNOWN TAG ERROR>" + str(content))
@@ -375,21 +390,38 @@ def getPatchNote(url):
     #                 currTree[key] = {}
     #             currTree = currTree[key]
     #     return tree
-    def dictionarize(currDict):
-        newDict = {}
-        for key, value in currDict.items():
-            if type(value) == "<class 'list'>":
-                newDict[key] = dict(value)
-            elif type(value) == "<class 'dict'>":
-                newDict[key] = dictionarize(value)
-            else:
-                newDict[key] = value
-        return newDict
+    # def dictionarize(currDict):
+    #     newDict = {}
+    #     for key, value in currDict.items():
+    #         if type(value) == "<class 'list'>":
+    #             newDict[key] = dict(value)
+    #         elif type(value) == "<class 'dict'>":
+    #             newDict[key] = dictionarize(value)
+    #         else:
+    #             newDict[key] = value
+    #     return newDict
 
-    pprint.pprint(data,indent=2)
+    #pprint.pprint(data,indent=2)
     # with open(os.path.join(os.path.join(BASE_DIR,"log"), str("ver"+str(version)+" "+str(timezone.now().strftime("%Y-%m-%d %H-%M-%S"))+'.json')), 'w+', encoding="utf-8") as json_file:
     #     json.dump(dictionarize(data), json_file, ensure_ascii=False, indent="\t")
 
 if __name__ == '__main__':
-    checkNewPatchNote()
-    #getPatchNote("https://kr.leagueoflegends.com/ko-kr/news/game-updates/patch-10-4-notes/")
+    def getAllPatchNoteFromPrevUrls():
+        try:
+            with open(os.path.join('resources', 'prevTitles.txt'), 'rb') as f:
+                prevUrlAndTitles = pickle.load(f)
+        except FileNotFoundError:
+            with open(os.path.join('resources', 'prevTitles.txt'), 'wb') as f:
+                pickle.dump([], f)
+                prevUrlAndTitles = []
+        pprint.pprint(prevUrlAndTitles)
+        for url, title in prevUrlAndTitles:
+            title = title.strip()
+            if title not in map(lambda x: x[1], prevUrlAndTitles):
+                print("getPatchNote({})".format(title))
+                getPatchNote(url)
+
+
+    #getAllPatchNoteFromPrevUrls()
+    # checkNewPatchNote()
+    getPatchNote("https://kr.leagueoflegends.com/ko-kr/news/game-updates/patch-10-4-notes/")

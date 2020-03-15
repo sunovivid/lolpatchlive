@@ -6,13 +6,17 @@
 </head>
 <body>
     <section>
-        <h3>Version: {{ version }}</h3>
+        {%  for versionModel in list %}
+            <h4>{{ versionModel.version }}</h4><br/>
+        {% endfor %}
+        <h3>list: {{ list }}</h3>
         <div class="live_patch_note_border">
+            latest{{ latest }}
             <div class="summary_container">
                 <div class="summary_text">
                 </div>
                 <span class="update_tags">
-
+                now{{ now }}
                 </span>
             </div>
             <div class="champion_icons_container">
