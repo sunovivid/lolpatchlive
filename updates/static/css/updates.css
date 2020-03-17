@@ -1,0 +1,61 @@
+html {
+    font-family: "Gotham SSm A", "Gotham SSm B", 'Noto Sans KR', 'NanumGothic', 'ë‚˜ëˆ”ê³ ë”•', 'Malgun Gothic', 'ë§‘ì€ ê³ ë”•', sans-serif;
+    font-weight: 400;
+    color: #0b1b38;
+
+	-ms-text-size-adjust: 100%;
+	-webkit-text-size-adjust: 100%;
+	margin: 0;
+	padding: 0;
+	width: 100%;
+    overflow-x: hidden;
+    font-size: calc(10px + 0.7vmin);
+    letter-spacing: -0.05ch;
+    line-height: 1.5;
+}
+
+.live_patch_note_container {
+    background: #982C8F;
+    width: 768px;
+    margin: 0 auto;
+    margin-top: 12rem;
+    color: white;
+    border-radius: 4px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+}
+
+.live_patch_version_title {
+    padding: 1rem;
+    text-align: left;
+    background: #FF2E9C;;
+    color: white;
+}
+
+.live_patch_version_text {
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+.live_patch_hotfix_text {
+    font-size: 1rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.live_patch_note_border_top {
+    display: flex;
+}
+
+.summary_container {
+    padding: 16px;
+    width: 150%
+}
+
+.champion_icons_container {
+}
+
+.live_patch_note_border_bot {
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.78);
+    padding: 16px;
+}

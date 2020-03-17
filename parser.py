@@ -423,5 +423,5 @@ if __name__ == '__main__':
 
 
     #getAllPatchNoteFromPrevUrls()
-    # checkNewPatchNote()
-    getPatchNote("https://kr.leagueoflegends.com/ko-kr/news/game-updates/patch-10-4-notes/")
+    checkNewPatchNote()
+    #getPatchNote("https://kr.leagueoflegends.com/ko-kr/news/game-updates/patch-10-4-notes/")

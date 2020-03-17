@@ -1,31 +1,44 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
-</head>
+{#    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">#}
+{#    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css"></head>#}
+<link rel="stylesheet" href="{%  static 'css/updates.css' %}">
 <body>
-    <section>
-        {%  for versionModel in list %}
-            <h4>{{ versionModel.version }}</h4><br/>
-        {% endfor %}
-        <h3>list: {{ list }}</h3>
+<section>
+    <div class="live_patch_note_container">
+        <h3 class="live_patch_version_title">
+            <span class="live_patch_version_text">{{ now.version }}</span>
+            <span class="live_patch_hotfix_text">{{ now.hotfix }}</span>
+        </h3>
         <div class="live_patch_note_border">
-            latest{{ latest }}
-            <div class="summary_container">
-                <div class="summary_text">
+            <div class="live_patch_note_border_top">
+                <div class="summary_container">
+                    {{ now.summary }}
                 </div>
-                <span class="update_tags">
-                now{{ now }}
-                </span>
+                <div class="champion_icons_container">
+                    {% for champion in now.champions %}
+                        <span>{{ champion }}</span>
+                    {% endfor %}
+                </div>
             </div>
-            <div class="champion_icons_container">
-
+            <div class="live_patch_note_border_bot">
+                <div class="update_tags_container">
+                    <span class="update_tags">
+                        {% for tag in now.tags %}
+                            <span>#{{ tag }}</span>
+                        {% endfor %}
+                    </span>
+                </div>
             </div>
         </div>
-    </section>
-    <section>
+    </div>
+</section>
+<section>
 
-    </section>
+</section>
 </body>
 </html>

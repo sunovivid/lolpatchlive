@@ -40,15 +40,14 @@ def index(request):
             context[key]["version"] = versionModel.version
             context[key]["summary"] = versionModel.summary
             minorUpdateModels = MinorUpdateModel.objects.filter(version=versionModel).order_by('-updateDate')
-            context[key]["hotfix"] = "Hotfix #{} ".format(len(minorUpdateModels)) + minorUpdateModels[0].updateTitle
-            headerModels = HeaderModel.objects.filter(version=VersionModel).order_by('-updateDate')
+            if len(minorUpdateModels) <= 1:
+                hotfixText = ''
+            else:
+                hotfixText = "Hotfix #{} ".format(len(minorUpdateModels)-1) + minorUpdateModels[1].updateTitle if not '아직 추가 패치 노트 없음' in minorUpdateModels[1].updateTitle else ''
+            context[key]["hotfix"] = hotfixText
+            headerModels = HeaderModel.objects.filter(version=versionModel).order_by('-updateDate')
             context[key]["tags"] = list(map(lambda x: x.header, headerModels))
             context[key]["champions"] = list(map(lambda x: x.championName, get_list_or_404(ChampionPatchModel, version=versionModel)))
-    context = {
-        "latest": vModels[0].version,
-        "now":versions.getLiveClientVersion(),
-        "list":vModels
-    }
     return render(request, 'updates/index.html', context)
 # Create your views here.
 
