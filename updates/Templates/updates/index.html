@@ -20,8 +20,9 @@
                     {{ now.summary }}
                 </div>
                 <div class="champion_icons_container">
-                    {% for champion in now.champions %}
-                        <span>{{ champion }}</span>
+                    {% for championName, championUrl in now.champions %}
+                        <span>{{ championName }}</span>
+{#                        <img alt={{ champion.0 }} src={{ champion.1 }}/>#}
                     {% endfor %}
                 </div>
             </div>

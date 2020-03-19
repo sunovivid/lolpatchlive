@@ -23,21 +23,11 @@ import requests
 #from .mainApp.models import TempTable
 # sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 from updates.models import *
+import tools
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ddVersion = requests.get("https://ddragon.leagueoflegends.com/realms/kr.json").json()["n"]["champion"]
-def getDictFromJsonUrl(url):
-    fileName = url[url.rfind("/")+1:]
-    filePath = os.path.join(os.path.join(BASE_DIR, 'resources'), fileName)
-    if os.path.exists(filePath):
-        with open(filePath, 'r', encoding="utf-8") as json_file:
-            data = json.load(json_file)
-    else:
-        data = requests.get(url).json()
-        with open(filePath, 'w+', encoding="utf-8") as json_file:
-            json.dump(data, json_file, ensure_ascii=False, indent="\t")
-    return data
-ddChampionJson = getDictFromJsonUrl("http://ddragon.leagueoflegends.com/cdn/{}/data/ko_KR/champion.json".format(ddVersion))["data"].items()
+ddVersion = tools.getDdVersion()
+ddChampionJson = tools.getChampionJson()
 
 def getHtml(url):
     html = urlopen(url)
@@ -180,14 +170,16 @@ def checkNewPatchNote():
             pickle.dump([], f)
             prevUrlAndTitles = []
     pprint.pprint(prevUrlAndTitles)
-    currentUrlsAndTitles = getAllPatchNoteUrlsAndTitles().reversed()
+    currentUrlsAndTitles = reversed(getAllPatchNoteUrlsAndTitles())
     pprint.pprint(currentUrlsAndTitles)
     while currentUrlsAndTitles is None:
-        currentUrlsAndTitles = getAllPatchNoteUrlsAndTitles().reversed()
+        currentUrlsAndTitles = reversed(getAllPatchNoteUrlsAndTitles())
+
     for url, title in currentUrlsAndTitles:
         if title not in map(lambda x:x[1], prevUrlAndTitles):
             print("getPatchNote({})".format(title))
             getPatchNote(url)
+    #중간에 getPatchNote가 실패하고 타이틀만 저장하는 경우를 막기 위해 파일을 나중에 저장
     with open(os.path.join('resources','prevTitles.txt'),'wb') as f:
         pickle.dump(currentUrlsAndTitles, f)
 
@@ -331,6 +323,8 @@ def getPatchNote(url, getMinorUpdateOnly=False):
                             minorUpdateModel = getAndSaveModelSafe(MinorUpdateModel, updateTitle=updateTitle, version=versionModel)
                             for line in content.find("div",{"class":"white-stone accent-before"}).div.children:
                                 if line.name is not None:
+                                    itemName = "Unnamed item"
+                                    data["models"]["추가 패치 노트"][updateTitle][itemName] = []
                                     if line.name == "h4":
                                         itemName = line.get_text().strip()
                                         # item = []
@@ -408,9 +402,11 @@ def getPatchNote(url, getMinorUpdateOnly=False):
 if __name__ == '__main__':
     def getAllPatchNoteFromPrevUrls():
         try:
+            print("File Found")
             with open(os.path.join('resources', 'prevTitles.txt'), 'rb') as f:
                 prevUrlAndTitles = pickle.load(f)
         except FileNotFoundError:
+            print("File Not Found")
             with open(os.path.join('resources', 'prevTitles.txt'), 'wb') as f:
                 pickle.dump([], f)
                 prevUrlAndTitles = []
@@ -424,4 +420,4 @@ if __name__ == '__main__':
 
     #getAllPatchNoteFromPrevUrls()
     checkNewPatchNote()
-    #getPatchNote("https://kr.leagueoflegends.com/ko-kr/news/game-updates/patch-10-4-notes/")
+    #getPatchNote("https://kr.leagueoflegends.com/ko-kr/news/game-updates/9-18-paechi-noteu-sujeong/")

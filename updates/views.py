@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.shortcuts import *
-import versions
+import tools
 # Create your views here.
 
 from .models import *
@@ -12,7 +12,10 @@ sampleData = {
         "summary": "",
         "hotfix": "Hotfix 2 티아맷/굶주린 히드라 버그 수정",
         "tags": ["정글 챔피언", "상단 공격로의 중요성"],
-        "champions": ["알리스타","카이사"]
+        "champions": { #챔피언 이름:image url
+            "킨드레드":"https://am-a.akamaihd.net/image?f=http://ddragon.leagueoflegends.com/cdn/10.5.1/img/champion/Kindred.png",
+            "카이사":""
+        }
     },
     "now": {
 
@@ -30,7 +33,7 @@ def index(request):
     }
 
     for i, v in enumerate(vModels):
-        if str(v.version) == versions.getLiveClientVersion():
+        if str(v.version) == tools.getLiveClientVersion():
             versionModelDict["now"] = vModels[i]
             versionModelDict["prev"] = vModels[i-1] if i-1 > 0 else None
             versionModelDict["next"] = vModels[i+1] if i+1 < len(vModels) else None
@@ -47,7 +50,7 @@ def index(request):
             context[key]["hotfix"] = hotfixText
             headerModels = HeaderModel.objects.filter(version=versionModel).order_by('-updateDate')
             context[key]["tags"] = list(map(lambda x: x.header, headerModels))
-            context[key]["champions"] = list(map(lambda x: x.championName, get_list_or_404(ChampionPatchModel, version=versionModel)))
+            context[key]["champions"] = list(map(lambda x: (x.championName, tools.getChampionImageUrl(x.championName)), get_list_or_404(ChampionPatchModel, version=versionModel)))
     return render(request, 'updates/index.html', context)
 # Create your views here.
 
