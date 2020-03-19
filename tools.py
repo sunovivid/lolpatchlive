@@ -30,7 +30,7 @@ def getChampionImageUrl(championName):
     for key, value in getChampionJson():
         if championName == value["name"]:
             championEngName = str(key)
-    return "https://am-a.akamaihd.net/image?f=http://ddragon.leagueoflegends.com/cdn/10.5.1/img/champion/{}.png".format(championEngName)
+    return "http://ddragon.leagueoflegends.com/cdn/{}/img/champion/{}.png".format(getDdVersion(),championEngName)
 
 def getLiveClientVersion():
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))

@@ -6,6 +6,8 @@ import tools
 from .models import *
 from django.core.exceptions import ObjectDoesNotExist
 
+# Create your views here.
+
 sampleData = {
     "prev": {
         "version": 10.4,
@@ -52,5 +54,7 @@ def index(request):
             context[key]["tags"] = list(map(lambda x: x.header, headerModels))
             context[key]["champions"] = list(map(lambda x: (x.championName, tools.getChampionImageUrl(x.championName)), get_list_or_404(ChampionPatchModel, version=versionModel)))
     return render(request, 'updates/index.html', context)
-# Create your views here.
 
+def champion(request, name):
+    context = {"name":name}
+    return render(request, 'updates/champion.html', context)

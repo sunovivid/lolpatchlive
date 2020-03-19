@@ -21,8 +21,9 @@
                 </div>
                 <div class="champion_icons_container">
                     {% for championName, championUrl in now.champions %}
-                        <span>{{ championName }}</span>
-{#                        <img alt={{ champion.0 }} src={{ champion.1 }}/>#}
+                        <a href="/champion/{{ championName }}">
+                            <img src={{ championUrl }} alt={{ championName }}>
+                        </a>
                     {% endfor %}
                 </div>
             </div>
@@ -37,9 +38,6 @@
             </div>
         </div>
     </div>
-</section>
-<section>
-
 </section>
 </body>
 </html>
