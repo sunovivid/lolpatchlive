@@ -6,5 +6,9 @@
 </head>
 <body>
     <h1>{{ name }}</h1>
+    {% for version, contentHtml in updates %}
+        <h2>{{ version }}</h2>
+        <p>{{ contentHtml|safe }}<br></p>
+    {% endfor %}
 </body>
 </html>

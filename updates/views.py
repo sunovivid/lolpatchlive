@@ -1,5 +1,7 @@
+import re
 from django.shortcuts import render
 from django.shortcuts import *
+
 import tools
 # Create your views here.
 
@@ -55,6 +57,17 @@ def index(request):
             context[key]["champions"] = list(map(lambda x: (x.championName, tools.getChampionImageUrl(x.championName)), get_list_or_404(ChampionPatchModel, version=versionModel)))
     return render(request, 'updates/index.html', context)
 
-def champion(request, name):
-    context = {"name":name}
-    return render(request, 'updates/champion.html', context)
+def champion(request, name) :
+
+    def removeTag(tag, html):
+        p = re.compile("<{}.*>.*</{}>".format(tag, tag))
+        m = p.search(html)
+        if m is not None:
+            html = html[:m.start()] + html[m.end():]
+        return html
+
+
+    updates = ChampionPatchModel.objects.filter(championName=name).order_by('-updateDate')
+    championPatchNoteList = list(map(lambda update:(update.version, removeTag("h3",removeTag("a",update.contentHtml))), updates))
+
+    return render(request, 'updates/champion.html', {"updates":championPatchNoteList})
